@@ -1,30 +1,22 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <pthread.h>
 #include "../include/ringbuffer.h"
 
-// Static buffer and related variables
-static int* buffer = NULL;
+#define MAX_BUFFER_SIZE 1024
+
+static int buffer[MAX_BUFFER_SIZE];
 static int buffer_size = 0;
 static int head = 0;
 static int tail = 0;
 static int count = 0;
 
-// Mutex for thread safety
 static pthread_mutex_t buffer_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void ringbuffer_init(int size) {
     pthread_mutex_lock(&buffer_mutex);
     
-    // Clean up existing buffer if any
-    if (buffer != NULL) {
-        free(buffer);
-    }
-    
-    // Allocate new buffer
-    buffer = (int*)malloc(size * sizeof(int));
-    if (buffer == NULL) {
-        fprintf(stderr, "Failed to allocate memory for ring buffer\n");
+    if (size > MAX_BUFFER_SIZE) {
+        fprintf(stderr, "Requested size %d exceeds maximum buffer size %d\n", size, MAX_BUFFER_SIZE);
         pthread_mutex_unlock(&buffer_mutex);
         return;
     }
@@ -93,10 +85,6 @@ int ringbuffer_size(void) {
 void ringbuffer_cleanup(void) {
     pthread_mutex_lock(&buffer_mutex);
     
-    if (buffer != NULL) {
-        free(buffer);
-        buffer = NULL;
-    }
     buffer_size = 0;
     head = 0;
     tail = 0;
